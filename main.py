@@ -183,6 +183,8 @@ def main():
 
         draw(red, yellow, red_bullets, yellow_bullets, red_lives, yellow_lives)
 
+    main()
+
 
 if __name__ == "__main__":
     main()
