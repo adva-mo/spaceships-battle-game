@@ -4,52 +4,75 @@ from pygame.locals import *
 import pygame, sys
 import os
 
+
+# Initialize pygame and font
+pygame.init()
 pygame.font.init()
 
+# Define colors
 WIDTH, HEIGHT = 900, 500
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("for nahal<3")
-bg_color = (140, 171, 168)
+BG_COLOR = (140, 171, 168)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 YELLOW = (255, 255, 0)
 WHITE = (255, 255, 255)
 
-BORDER = pygame.Rect(WIDTH // 2 - 5, 0, 10, HEIGHT)
-
-HEALTH_FONT = pygame.font.SysFont("comicsans", 40)
-
-FPS = 60  # speed:frames per second
-SPACESHIP_WITDH, SPACESHIP_HEIGHT = 50, 40
-VEL = 5
-BULLET_VEL = 7
+# Define game constants
+BORDER_WIDTH = 10
+FPS = 60
+SPACESHIP_WIDTH = 50
+SPACESHIP_HEIGHT = 40
+PLAYER_VELOCITY = 5
+BULLET_VELOCITY = 7
 MAX_BULLETS = 3
 
+# Custom events for handling player hits
 YELLOW_HIT = pygame.USEREVENT + 1
 RED_HIT = pygame.USEREVENT + 2
 
-
-YELLOW_PLAYER_image = pygame.image.load(os.path.join("pics", "spaceship_yellow.png"))
+# Load assets
+YELLOW_PLAYER_IMAGE_PATH = os.path.join("pics", "spaceship_yellow.png")
+RED_PLAYER_IMAGE_PATH = os.path.join("pics", "spaceship_red.png")
 YELLOW_PLAYER = pygame.transform.rotate(
-    pygame.transform.scale(YELLOW_PLAYER_image, (SPACESHIP_WITDH, SPACESHIP_HEIGHT)),
+    pygame.transform.scale(
+        pygame.image.load(YELLOW_PLAYER_IMAGE_PATH), (SPACESHIP_WIDTH, SPACESHIP_HEIGHT)
+    ),
     270,
 )
-
-RED_PLAYER_image = pygame.image.load(os.path.join("pics", "spaceship_red.png"))
 RED_PLAYER = pygame.transform.rotate(
-    pygame.transform.scale(RED_PLAYER_image, (SPACESHIP_WITDH, SPACESHIP_HEIGHT)), 90
+    pygame.transform.scale(
+        pygame.image.load(RED_PLAYER_IMAGE_PATH), (SPACESHIP_WIDTH, SPACESHIP_HEIGHT)
+    ),
+    90,
 )
-# space = pygame.image.load(os.path)
+HEALTH_FONT = pygame.font.SysFont("comicsans", 40)
 
+# Define player objects
+red_player = pygame.Rect(
+    WIDTH - SPACESHIP_WIDTH - 10,
+    HEIGHT // 2 - SPACESHIP_HEIGHT // 2,
+    SPACESHIP_WIDTH,
+    SPACESHIP_HEIGHT,
+)
+yellow_player = pygame.Rect(
+    10, HEIGHT // 2 - SPACESHIP_HEIGHT // 2, SPACESHIP_WIDTH, SPACESHIP_HEIGHT
+)
+
+# define border object:
+BORDER = pygame.Rect(WIDTH // 2 - 5, 0, 10, HEIGHT)
+
+# Define lists for bullets
 red_bullets = []
 yellow_bullets = []
 
+# Define player lives
 red_lives = 10
 yellow_lives = 10
 
 
-def draw(red, yellow, red_bullets, yellow_bullets, red_lives, yellow_lives):
-    WIN.fill(bg_color)
+def draw_game_window(red, yellow, red_bullets, yellow_bullets, red_lives, yellow_lives):
+    WIN.fill(BG_COLOR)
     pygame.draw.rect(WIN, BLACK, BORDER)
 
     red_lives_text = HEALTH_FONT.render("Lives: " + str(red_lives), 1, WHITE)
@@ -69,35 +92,45 @@ def draw(red, yellow, red_bullets, yellow_bullets, red_lives, yellow_lives):
     pygame.display.update()
 
 
-def yellow_movement(keys_pressed, yellow):
-    if keys_pressed[pygame.K_a] and yellow.x - VEL > 0:  # left
-        yellow.x -= VEL
-    elif keys_pressed[pygame.K_w] and yellow.y - VEL > 0:  # up
-        yellow.y -= VEL
+def handle_yellow_movement(keys_pressed, yellow):
+    if keys_pressed[pygame.K_a] and yellow.x - PLAYER_VELOCITY > 0:  # left
+        yellow.x -= PLAYER_VELOCITY
+    elif keys_pressed[pygame.K_w] and yellow.y - PLAYER_VELOCITY > 0:  # up
+        yellow.y -= PLAYER_VELOCITY
     elif (
-        keys_pressed[pygame.K_d] and yellow.x + VEL + yellow.width - 10 < BORDER.x
+        keys_pressed[pygame.K_d]
+        and yellow.x + PLAYER_VELOCITY + yellow.width - 10 < BORDER.x
     ):  # right
-        yellow.x += VEL
+        yellow.x += PLAYER_VELOCITY
     elif (
-        keys_pressed[pygame.K_s] and yellow.y + VEL + yellow.height + 10 < HEIGHT
+        keys_pressed[pygame.K_s]
+        and yellow.y + PLAYER_VELOCITY + yellow.height + 10 < HEIGHT
     ):  # down
-        yellow.y += VEL
+        yellow.y += PLAYER_VELOCITY
 
 
-def red_movement(keys_pressed, red):
-    if keys_pressed[pygame.K_LEFT] and red.x - VEL - 10 > BORDER.x:  # left
-        red.x -= VEL
-    elif keys_pressed[pygame.K_UP] and red.y - VEL > 0:  # up
-        red.y -= VEL
-    elif keys_pressed[pygame.K_RIGHT] and red.x + VEL + red.width - 12 < WIDTH:  # right
-        red.x += VEL
-    elif keys_pressed[pygame.K_DOWN] and red.y + VEL + red.height + 10 < HEIGHT:  # down
-        red.y += VEL
+def handle_red_movement(keys_pressed, red):
+    if (
+        keys_pressed[pygame.K_LEFT] and red.x - PLAYER_VELOCITY - 10 > BORDER_WIDTH
+    ):  # left
+        red.x -= PLAYER_VELOCITY
+    elif keys_pressed[pygame.K_UP] and red.y - PLAYER_VELOCITY > 0:  # up
+        red.y -= PLAYER_VELOCITY
+    elif (
+        keys_pressed[pygame.K_RIGHT]
+        and red.x + PLAYER_VELOCITY + red.width - 12 < WIDTH
+    ):  # right
+        red.x += PLAYER_VELOCITY
+    elif (
+        keys_pressed[pygame.K_DOWN]
+        and red.y + PLAYER_VELOCITY + red.height + 10 < HEIGHT
+    ):  # down
+        red.y += PLAYER_VELOCITY
 
 
-def bullets_controll(yellow_bullets, red_bullets, yellow, red):
+def handle_bullets_controll(yellow_bullets, red_bullets, yellow, red):
     for bullet in yellow_bullets:
-        bullet.x += BULLET_VEL
+        bullet.x += BULLET_VELOCITY
         if red.colliderect(bullet):
             pygame.event.post(pygame.event.Event(RED_HIT))
             yellow_bullets.remove(bullet)
@@ -105,7 +138,7 @@ def bullets_controll(yellow_bullets, red_bullets, yellow, red):
             yellow_bullets.remove(bullet)
 
     for bullet in red_bullets:
-        bullet.x -= BULLET_VEL
+        bullet.x -= BULLET_VELOCITY
         if yellow.colliderect(bullet):
             pygame.event.post(pygame.event.Event(YELLOW_HIT))
             red_bullets.remove(bullet)
@@ -129,10 +162,10 @@ def draw_winner(text):
 def main():
     global red_lives, yellow_lives
     red = pygame.Rect(
-        700, 300, SPACESHIP_WITDH, SPACESHIP_HEIGHT
+        700, 300, SPACESHIP_WIDTH, SPACESHIP_HEIGHT
     )  # represent red player on the screen
     yellow = pygame.Rect(
-        100, 300, SPACESHIP_WITDH, SPACESHIP_HEIGHT
+        100, 300, SPACESHIP_WIDTH, SPACESHIP_HEIGHT
     )  # represent yellow player on the screen
 
     clock = pygame.time.Clock()
@@ -176,12 +209,14 @@ def main():
             break
 
         keys_pressed = pygame.key.get_pressed()
-        yellow_movement(keys_pressed, yellow)
-        red_movement(keys_pressed, red)
+        handle_yellow_movement(keys_pressed, yellow)
+        handle_red_movement(keys_pressed, red)
 
-        bullets_controll(yellow_bullets, red_bullets, yellow, red)
+        handle_bullets_controll(yellow_bullets, red_bullets, yellow, red)
 
-        draw(red, yellow, red_bullets, yellow_bullets, red_lives, yellow_lives)
+        draw_game_window(
+            red, yellow, red_bullets, yellow_bullets, red_lives, yellow_lives
+        )
 
     main()
 
